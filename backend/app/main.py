@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from .database import engine, Base
-from .models import User
+from app.database import engine, Base
+from app.models import User
 
 app = FastAPI(title="PROMETHEUS CORE")
 
