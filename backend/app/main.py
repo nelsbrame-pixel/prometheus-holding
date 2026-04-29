@@ -1,18 +1,16 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
 from .models.user import User
-from .schemas import UserCreate
+from .schemas import UserCreate, UserOut
+from .auth import hash_password
 
 app = FastAPI(title="PROMETHEUS CORE")
 
-
-# cria tabelas automaticamente (ok para MVP)
 Base.metadata.create_all(bind=engine)
 
 
-# dependência de banco
 def get_db():
     db = SessionLocal()
     try:
@@ -21,27 +19,29 @@ def get_db():
         db.close()
 
 
-# health check (Render usa isso para saber que está vivo)
 @app.get("/health")
 def health():
     return {"status": "online"}
 
 
-# registro de usuário
-@app.post("/register")
+@app.post("/register", response_model=UserOut)
 def register(user: UserCreate, db: Session = Depends(get_db)):
+
+    # verifica se usuário já existe
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email já cadastrado"
+        )
 
     new_user = User(
         email=user.email,
-        hashed_password=user.password  # depois vamos criptografar isso
+        hashed_password=hash_password(user.password)
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    return {
-        "message": "Usuário criado com sucesso",
-        "id": new_user.id,
-        "email": new_user.email
-    }
+    return new_user
