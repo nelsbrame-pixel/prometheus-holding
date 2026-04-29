@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
 from .models.user import User
-from .schemas import UserCreate, UserLogin, Token
+from .schemas import UserCreate, UserLogin
 from .auth import hash_password, verify_password, create_access_token
 
 app = FastAPI(title="PROMETHEUS CORE")
@@ -11,6 +11,7 @@ app = FastAPI(title="PROMETHEUS CORE")
 Base.metadata.create_all(bind=engine)
 
 
+# DB DEPENDENCY
 def get_db():
     db = SessionLocal()
     try:
@@ -19,15 +20,14 @@ def get_db():
         db.close()
 
 
+# HEALTH
 @app.get("/health")
 def health():
     return {"status": "online"}
 
 
-# =========================
 # REGISTER
-# =========================
-@app.post("/register", response_model=Token)
+@app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
 
     existing = db.query(User).filter(User.email == user.email).first()
@@ -43,18 +43,15 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    token = create_access_token({"sub": new_user.email})
-
     return {
-        "access_token": token,
-        "token_type": "bearer"
+        "message": "Usuário criado com sucesso",
+        "id": new_user.id,
+        "email": new_user.email
     }
 
 
-# =========================
-# LOGIN
-# =========================
-@app.post("/login", response_model=Token)
+# LOGIN (AUTH REAL)
+@app.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
 
     db_user = db.query(User).filter(User.email == user.email).first()
@@ -63,7 +60,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
     if not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Senha inválida")
+        raise HTTPException(status_code=401, detail="Senha incorreta")
 
     token = create_access_token({"sub": db_user.email})
 
