@@ -4,7 +4,6 @@ from .models.user import User
 
 app = FastAPI(title="PROMETHEUS CORE")
 
-# cria tabelas no banco automaticamente
 Base.metadata.create_all(bind=engine)
 
 @app.get("/health")
