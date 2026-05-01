@@ -6,7 +6,12 @@ from .models.user import User
 from .models.agent import Agent
 from .models.task import Task
 from .schemas import UserCreate, UserLogin
-from .auth import hash_password, verify_password, create_access_token
+from .auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    get_current_user,
+)
 
 app = FastAPI(title="PROMETHEUS CORE")
 
@@ -57,17 +62,31 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     return {"access_token": token}
 
 
+# 🔒 PROTEGIDA
 @app.post("/agents")
-def create_agent(name: str, type: str = "generic", db: Session = Depends(get_db)):
+def create_agent(
+    name: str,
+    type: str = "generic",
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     agent = Agent(name=name, type=type)
 
     db.add(agent)
     db.commit()
     db.refresh(agent)
 
-    return {"id": agent.id, "type": agent.type}
+    return {
+        "message": f"Agente criado por {current_user}",
+        "id": agent.id,
+        "type": agent.type
+    }
 
 
+# 🔒 PROTEGIDA
 @app.get("/tasks")
-def list_tasks(db: Session = Depends(get_db)):
+def list_tasks(
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     return db.query(Task).all()
