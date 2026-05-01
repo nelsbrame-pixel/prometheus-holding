@@ -54,33 +54,43 @@ def process_tasks(db):
 def run_agents():
     db = SessionLocal()
 
-    # GOVERNANÇA ANTES
-    evaluate_agents(db)
-    enforce_limits(db)
+    try:
+        # GOVERNANÇA
+        evaluate_agents(db)
+        enforce_limits(db)
 
-    agents = db.query(Agent).filter(Agent.active == True).all()
+        agents = db.query(Agent).filter(Agent.active == True).all()
 
-    for agent in agents:
-        result = run_agent(agent, db)
+        for agent in agents:
+            result = run_agent(agent, db)
 
-        log = AgentLog(
-            agent_name=agent.name,
-            action=result["action"],
-            result=result["result"],
-            score=0.0
-        )
+            log = AgentLog(
+                agent_name=agent.name,
+                action=result["action"],
+                result=result["result"],
+                score=0.0
+            )
 
-        db.add(log)
+            db.add(log)
 
-    process_tasks(db)
+        process_tasks(db)
 
-    db.commit()
-    db.close()
+        db.commit()
+
+    finally:
+        db.close()  # 🔥 ESSENCIAL
 
 
 def start_worker():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(run_agents, "interval", seconds=20)
+
+    scheduler.add_job(
+        run_agents,
+        "interval",
+        seconds=30,        # ↑ menos agressivo
+        max_instances=1    # 🔥 evita concorrência
+    )
+
     scheduler.start()
 
-    print("[PROMETHEUS] Governança ativa")
+    print("[PROMETHEUS] Governança + Pool estabilizado")
