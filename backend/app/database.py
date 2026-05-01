@@ -7,16 +7,18 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=10,          # ↑ aumenta conexões base
-    max_overflow=20,       # ↑ permite pico
-    pool_timeout=30,
-    pool_recycle=1800,     # evita conexões mortas
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10
 )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+
+def init_db():
+    from .models import user, agent, agent_log
+
+    Base.metadata.drop_all(bind=engine)   # ⚠️ REMOVE TUDO
+    Base.metadata.create_all(bind=engine) # CRIA NOVO

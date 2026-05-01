@@ -1,118 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
+from .database import init_db
 
-from .database import engine, Base, SessionLocal
-from .models.user import User
-from .models.agent import Agent
-from .models.task import Task
-from .schemas import UserCreate, UserLogin
-from .auth import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    get_current_user,
-)
-from .worker import start_worker
-
-app = FastAPI(title="PROMETHEUS CORE")
-
-Base.metadata.create_all(bind=engine)
+app = FastAPI()
 
 
 @app.on_event("startup")
-def startup_event():
-    start_worker()
+def startup():
+    init_db()
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@app.get("/health")
-def health():
-    return {"status": "online"}
-
-
-@app.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    hashed = hash_password(user.password)
-
-    new_user = User(
-        email=user.email,
-        hashed_password=hashed,
-        role="user"
-    )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return {"message": "Usuário criado"}
-
-
-@app.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Usuário não encontrado")
-
-    if not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Senha inválida")
-
-    token = create_access_token({"sub": db_user.email})
-
-    return {"access_token": token}
-
-
-@app.post("/agents")
-def create_agent(
-    name: str,
-    type: str = "growth",
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acesso negado")
-
-    agent = Agent(
-        name=name,
-        type=type,
-        owner_email=current_user.email
-    )
-
-    db.add(agent)
-    db.commit()
-    db.refresh(agent)
-
-    return {"id": agent.id}
-
-
-@app.get("/agents")
-def list_agents(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    if current_user.role == "admin":
-        return db.query(Agent).all()
-
-    return db.query(Agent).filter(
-        Agent.owner_email == current_user.email
-    ).all()
-
-
-@app.get("/tasks")
-def list_tasks(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    if current_user.role == "admin":
-        return db.query(Task).all()
-
-    return db.query(Task).filter(
-        Task.owner_email == current_user.email
-    ).all()
+@app.get("/")
+def root():
+    return {"status": "ok"}
