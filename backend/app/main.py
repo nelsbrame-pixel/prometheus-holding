@@ -1,28 +1,11 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
+from .models.agent import Agent
 
-from .database import engine, Base, SessionLocal
-from .models.user import User
-from .schemas import UserCreate, UserLogin, Token
-from .auth import hash_password, verify_password, create_access_token
-from .worker import start_worker
+@app.post("/agents")
+def create_agent(name: str, db: Session = Depends(get_db)):
+    agent = Agent(name=name)
 
-app = FastAPI(title="PROMETHEUS CORE")
+    db.add(agent)
+    db.commit()
+    db.refresh(agent)
 
-Base.metadata.create_all(bind=engine)
-
-# 🔥 inicia o cérebro automático
-start_worker()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@app.get("/health")
-def health():
-    return {"status": "online"}
+    return {"message": "Agente criado", "id": agent.id}}
