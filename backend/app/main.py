@@ -8,4 +8,4 @@ def create_agent(name: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(agent)
 
-    return {"message": "Agente criado", "id": agent.id}}
+    return {"message": "Agente criado", "id": agent.id}
