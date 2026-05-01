@@ -10,7 +10,8 @@ def decide_action(agent, db: Session):
         if users_count < 10:
             task = Task(
                 agent_name=agent.name,
-                action="incentivar_cadastro"
+                action="incentivar_cadastro",
+                owner_email=agent.owner_email
             )
             db.add(task)
             db.commit()

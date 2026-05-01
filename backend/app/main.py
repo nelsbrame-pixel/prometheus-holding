@@ -73,7 +73,11 @@ def create_agent(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Acesso negado")
 
-    agent = Agent(name=name, type=type)
+    agent = Agent(
+        name=name,
+        type=type,
+        owner_email=current_user.email
+    )
 
     db.add(agent)
     db.commit()
@@ -81,9 +85,21 @@ def create_agent(
 
     return {
         "message": f"Agente criado por {current_user.email}",
-        "id": agent.id,
-        "type": agent.type
+        "id": agent.id
     }
+
+
+@app.get("/agents")
+def list_agents(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role == "admin":
+        return db.query(Agent).all()
+
+    return db.query(Agent).filter(
+        Agent.owner_email == current_user.email
+    ).all()
 
 
 @app.get("/tasks")
@@ -91,7 +107,9 @@ def list_tasks(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acesso negado")
+    if current_user.role == "admin":
+        return db.query(Task).all()
 
-    return db.query(Task).all()
+    return db.query(Task).filter(
+        Task.owner_email == current_user.email
+    ).all()

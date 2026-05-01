@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String
 from ..database import Base
 
 class Task(Base):
@@ -7,5 +7,6 @@ class Task(Base):
     id = Column(Integer, primary_key=True, index=True)
     agent_name = Column(String)
     action = Column(String)
-    status = Column(String, default="pending")  # pending, running, done
+    status = Column(String, default="pending")
     result = Column(String, nullable=True)
+    owner_email = Column(String)
