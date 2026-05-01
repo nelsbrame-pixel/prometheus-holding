@@ -47,8 +47,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
 # 🤖 criar agente
 @app.post("/agents")
-def create_agent(name: str, db: Session = Depends(get_db)):
-    agent = Agent(name=name)
+def create_agent(name: str, type: str = "generic", db: Session = Depends(get_db)):
+    agent = Agent(name=name, type=type)
 
     db.add(agent)
     db.commit()
@@ -57,5 +57,5 @@ def create_agent(name: str, db: Session = Depends(get_db)):
     return {
         "message": "Agente criado",
         "id": agent.id,
-        "name": agent.name
+        "type": agent.type
     }

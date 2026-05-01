@@ -6,5 +6,6 @@ class Agent(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    type = Column(String, default="generic")  # 👈 NOVO
     active = Column(Boolean, default=True)
     last_run = Column(String, nullable=True)
