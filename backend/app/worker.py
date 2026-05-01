@@ -16,7 +16,14 @@ def process_tasks(db):
         task.status = "running"
 
         if task.action == "incentivar_cadastro":
-            task.result = "Campanha de marketing iniciada"
+            task.result = "Campanha iniciada"
+
+        elif "analisar_total_usuarios" in task.action:
+            task.result = "Análise concluída"
+
+        elif task.action == "priorizar_execucao":
+            task.result = "Fila reorganizada"
+
         else:
             task.result = "Ação desconhecida"
 
@@ -37,7 +44,6 @@ def run_agents():
             agent_name=agent.name,
             action=result["action"],
             result=result["result"],
-            timestamp=result["time"]
         )
 
         db.add(log)
@@ -50,7 +56,7 @@ def run_agents():
 
 def start_worker():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(run_agents, "interval", seconds=30)
+    scheduler.add_job(run_agents, "interval", seconds=20)
     scheduler.start()
 
-    print("[PROMETHEUS] Worker ativo rodando a cada 30s")
+    print("[PROMETHEUS] Inteligência ativa (20s loop)")
