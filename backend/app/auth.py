@@ -4,6 +4,9 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 
+from .database import SessionLocal
+from .models.user import User
+
 SECRET_KEY = "PROMETHEUS_SECRET"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
@@ -38,7 +41,14 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         if email is None:
             raise HTTPException(status_code=401, detail="Token inválido")
 
-        return email
+        db = SessionLocal()
+        user = db.query(User).filter(User.email == email).first()
+        db.close()
+
+        if user is None:
+            raise HTTPException(status_code=401, detail="Usuário não encontrado")
+
+        return user
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")

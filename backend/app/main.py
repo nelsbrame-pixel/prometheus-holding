@@ -37,7 +37,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
     new_user = User(
         email=user.email,
-        hashed_password=hashed
+        hashed_password=hashed,
+        role="user"
     )
 
     db.add(new_user)
@@ -62,14 +63,16 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     return {"access_token": token}
 
 
-# 🔒 PROTEGIDA
 @app.post("/agents")
 def create_agent(
     name: str,
     type: str = "generic",
-    current_user: str = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
     agent = Agent(name=name, type=type)
 
     db.add(agent)
@@ -77,16 +80,18 @@ def create_agent(
     db.refresh(agent)
 
     return {
-        "message": f"Agente criado por {current_user}",
+        "message": f"Agente criado por {current_user.email}",
         "id": agent.id,
         "type": agent.type
     }
 
 
-# 🔒 PROTEGIDA
 @app.get("/tasks")
 def list_tasks(
-    current_user: str = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
     return db.query(Task).all()
