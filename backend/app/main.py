@@ -12,10 +12,16 @@ from .auth import (
     create_access_token,
     get_current_user,
 )
+from .worker import start_worker
 
 app = FastAPI(title="PROMETHEUS CORE")
 
 Base.metadata.create_all(bind=engine)
+
+
+@app.on_event("startup")
+def startup_event():
+    start_worker()
 
 
 def get_db():
@@ -66,7 +72,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 @app.post("/agents")
 def create_agent(
     name: str,
-    type: str = "generic",
+    type: str = "growth",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -83,10 +89,7 @@ def create_agent(
     db.commit()
     db.refresh(agent)
 
-    return {
-        "message": f"Agente criado por {current_user.email}",
-        "id": agent.id
-    }
+    return {"id": agent.id}
 
 
 @app.get("/agents")

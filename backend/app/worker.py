@@ -16,7 +16,7 @@ def process_tasks(db):
         task.status = "running"
 
         if task.action == "incentivar_cadastro":
-            task.result = "Campanha planejada"
+            task.result = "Campanha de marketing iniciada"
         else:
             task.result = "Ação desconhecida"
 
@@ -28,7 +28,7 @@ def process_tasks(db):
 def run_agents():
     db = SessionLocal()
 
-    agents = db.query(Agent).filter(Agent.active == True).all()
+    agents = db.query(Agent).all()
 
     for agent in agents:
         result = run_agent(agent, db)
@@ -50,7 +50,7 @@ def run_agents():
 
 def start_worker():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(run_agents, "interval", seconds=60)
+    scheduler.add_job(run_agents, "interval", seconds=30)
     scheduler.start()
 
-    print("[PROMETHEUS] Worker ativo")
+    print("[PROMETHEUS] Worker ativo rodando a cada 30s")
