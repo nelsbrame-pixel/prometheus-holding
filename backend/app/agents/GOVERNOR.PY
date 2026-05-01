@@ -20,7 +20,6 @@ def evaluate_agents(db: Session):
         if avg_score is None:
             continue
 
-        # DESATIVA AGENTE RUIM
         if avg_score < MIN_SCORE:
             agent.active = False
 
@@ -33,7 +32,6 @@ def enforce_limits(db: Session):
     if len(agents) <= MAX_AGENTS:
         return
 
-    # remove os mais antigos (menos eficientes normalmente)
     overflow = len(agents) - MAX_AGENTS
 
     for i in range(overflow):
