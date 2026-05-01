@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from ..database import Base
 
 
@@ -10,4 +10,5 @@ class Agent(Base):
     type = Column(String)
     owner_email = Column(String)
 
-    generation = Column(Integer, default=1)  # nível do agente
+    generation = Column(Integer, default=1)
+    active = Column(Boolean, default=True)  # ← GOVERNANÇA

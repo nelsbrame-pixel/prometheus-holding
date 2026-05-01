@@ -6,6 +6,7 @@ from .models.agent import Agent
 from .models.agent_log import AgentLog
 from .models.task import Task
 from .agents.core import run_agent
+from .agents.governor import evaluate_agents, enforce_limits
 
 
 def evaluate_task(task):
@@ -53,7 +54,11 @@ def process_tasks(db):
 def run_agents():
     db = SessionLocal()
 
-    agents = db.query(Agent).all()
+    # GOVERNANÇA ANTES
+    evaluate_agents(db)
+    enforce_limits(db)
+
+    agents = db.query(Agent).filter(Agent.active == True).all()
 
     for agent in agents:
         result = run_agent(agent, db)
@@ -78,4 +83,4 @@ def start_worker():
     scheduler.add_job(run_agents, "interval", seconds=20)
     scheduler.start()
 
-    print("[PROMETHEUS] Meta-inteligência ativa")
+    print("[PROMETHEUS] Governança ativa")
