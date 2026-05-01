@@ -1,86 +1,95 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+
 from ..models.user import User
 from ..models.task import Task
 from ..models.agent_log import AgentLog
 
 
-def recent_action_exists(db, agent_name, action):
-    last = db.query(AgentLog).filter(
-        AgentLog.agent_name == agent_name,
-        AgentLog.action == action
-    ).order_by(AgentLog.id.desc()).first()
+def get_best_action(db, agent_name):
+    results = (
+        db.query(
+            AgentLog.action,
+            func.avg(AgentLog.score).label("avg_score")
+        )
+        .filter(AgentLog.agent_name == agent_name)
+        .group_by(AgentLog.action)
+        .order_by(func.avg(AgentLog.score).desc())
+        .all()
+    )
 
-    if not last:
-        return False
+    if results:
+        return results[0].action
 
-    return True
+    return None
 
 
 def decide_action(agent, db: Session):
 
     users_count = db.query(User).count()
 
+    best_action = get_best_action(db, agent.name)
+
     # =========================
-    # AGENTE GROWTH
+    # GROWTH
     # =========================
     if agent.type == "growth":
 
-        if users_count < 10 and not recent_action_exists(
-            db, agent.name, "criou_task_growth"
-        ):
-            task = Task(
-                agent_name=agent.name,
-                action="incentivar_cadastro",
-                owner_email=agent.owner_email
-            )
-            db.add(task)
-            db.commit()
-            return "criou_task_growth"
+        if best_action == "criou_task_growth":
+            action = "incentivar_cadastro"
 
-        return "idle_growth"
+        else:
+            action = "incentivar_cadastro"
+
+        task = Task(
+            agent_name=agent.name,
+            action=action,
+            owner_email=agent.owner_email
+        )
+        db.add(task)
+        db.commit()
+
+        return "criou_task_growth"
 
 
     # =========================
-    # AGENTE ANALYTICS
+    # ANALYTICS
     # =========================
     if agent.type == "analytics":
 
-        action_name = f"criou_task_analytics_{users_count}"
+        action = f"analisar_total_usuarios_{users_count}"
 
-        if not recent_action_exists(db, agent.name, action_name):
-            task = Task(
-                agent_name=agent.name,
-                action=f"analisar_total_usuarios_{users_count}",
-                owner_email=agent.owner_email
-            )
-            db.add(task)
-            db.commit()
-            return action_name
+        task = Task(
+            agent_name=agent.name,
+            action=action,
+            owner_email=agent.owner_email
+        )
+        db.add(task)
+        db.commit()
 
-        return "idle_analytics"
+        return action
 
 
     # =========================
-    # AGENTE OPS
+    # OPS
     # =========================
     if agent.type == "ops":
 
-        pending_tasks = db.query(Task).filter(
-            Task.status == "pending"
-        ).count()
+        pending = db.query(Task).filter(Task.status == "pending").count()
 
-        if pending_tasks > 5 and not recent_action_exists(
-            db, agent.name, "criou_task_ops"
-        ):
-            task = Task(
-                agent_name=agent.name,
-                action="priorizar_execucao",
-                owner_email=agent.owner_email
-            )
-            db.add(task)
-            db.commit()
-            return "criou_task_ops"
+        if pending > 5:
+            action = "priorizar_execucao"
+        else:
+            action = "monitorar_fila"
 
-        return "idle_ops"
+        task = Task(
+            agent_name=agent.name,
+            action=action,
+            owner_email=agent.owner_email
+        )
+        db.add(task)
+        db.commit()
+
+        return action
 
     return "idle"
