@@ -9,7 +9,6 @@ from .agents.core import run_agent
 
 
 def evaluate_task(task):
-    # Simulação de desempenho (0 a 1)
     return round(random.uniform(0.3, 1.0), 2)
 
 
@@ -21,7 +20,6 @@ def process_tasks(db):
 
         task.status = "running"
 
-        # RESULTADO
         if task.action == "incentivar_cadastro":
             task.result = "Campanha executada"
 
@@ -35,12 +33,10 @@ def process_tasks(db):
             task.result = "Fila monitorada"
 
         else:
-            task.result = "Ação desconhecida"
+            task.result = "Ação do sistema"
 
-        # AVALIAÇÃO (AUTO-APRENDIZADO)
         score = evaluate_task(task)
 
-        # REGISTRO COM SCORE
         log = AgentLog(
             agent_name=task.agent_name,
             action=task.action,
@@ -82,4 +78,4 @@ def start_worker():
     scheduler.add_job(run_agents, "interval", seconds=20)
     scheduler.start()
 
-    print("[PROMETHEUS] Auto-otimização ativa")
+    print("[PROMETHEUS] Meta-inteligência ativa")
