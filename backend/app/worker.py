@@ -59,4 +59,4 @@ def start_worker():
     scheduler.add_job(run_agents, "interval", seconds=20)
     scheduler.start()
 
-    print("[PROMETHEUS] Inteligência ativa (20s loop)")
+    print("[PROMETHEUS] Memória estratégica ativa")
